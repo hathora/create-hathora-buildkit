@@ -1,6 +1,7 @@
 {
   "name": "create-hathora-buildkit",
-  "version": "1.0.22",
+  "version": "1.0.29",
+  "type": "module",
   "description": "A CLI utility used to bootstrap Hathora BuildKit projects.",
   "main": "index.js",
   "bin": "index.js",
@@ -10,6 +11,9 @@
   "author": "Kirk M. (@saricden)",
   "license": "ISC",
   "dependencies": {
-    "prompts": "^2.4.2"
+    "axios": "^1.2.1",
+    "chalk": "^5.2.0",
+    "prompts": "^2.4.2",
+    "shelljs": "^0.8.5"
   }
 }
