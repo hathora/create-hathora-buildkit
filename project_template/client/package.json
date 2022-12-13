@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@hathora/client-sdk": "^0.0.7",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.9"
+  }
+}

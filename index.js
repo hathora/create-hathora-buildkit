@@ -6,8 +6,12 @@ import shell from 'shelljs';
 import axios from 'axios';
 import chalk from 'chalk';
 import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const log = console.log;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let projectName = "";
 
@@ -25,19 +29,14 @@ log(chalk.bgMagenta(`Bootstrapping new Hathora project...`));
 bootstrapProject();
 
 async function bootstrapProject() {
-  // Sanity checks for required utils (git, node / npm)
-  if (!shell.which('git')) {
-    log(chalk.bgRed.bold('Sorry, this script requires git.'));
-    log('You can install it at: https://git-scm.com/');
-    shell.exit(1);
-  }
-
+  // Dependency check
   if (!shell.which('npm')) {
     log(chalk.bgRed.bold('Sorry, this script requires npm.'));
     log('You can install it at: https://nodejs.org/en/');
     shell.exit(1);
   }
 
+  // Get user's project name
   projectName = await prompts({
     type: 'text',
     name: 'value',
@@ -47,30 +46,45 @@ async function bootstrapProject() {
 
   projectName = projectName.value;
 
-  // We have a projectName, try to create a directory
-  log(chalk.green(`Cloning template into "${projectName}"...`));
+  // Recursively copy project_template into the user's project directory
+  log(chalk.green(`Copying boilerplate project to ./${projectName}...`));
 
-  shell.exec(`git clone git@github.com:hathora/buildkits-hello-world.git ${projectName}`);
+  shell.cp('-r', `${__dirname}/project_template`, `./${projectName}`);
 
   log(chalk.black.bgGreen(`Done.`));
-
-  log(chalk.green(`Removing and reinitializing git repo.`));
+  
+  // Install npm dependencies
+  log(chalk.green(`Installing root dependencies via npm...`));
 
   shell.cd(`./${projectName}`);
-
-  shell.rm('-rf', './.git');
-
-  shell.exec('git init');
-
-  log(chalk.black.bgGreen(`Done.`));
-
-  log(chalk.green(`Installing dependencies via npm...`));
 
   shell.exec('npm install');
 
   log(chalk.black.bgGreen(`Done.`));
+  log();
 
+  log(chalk.green(`Installing client dependencies via npm...`));
+
+  shell.cd('./client');
+
+  shell.exec('npm install');
+
+  log(chalk.black.bgGreen(`Done.`));
+  log();
+
+  log(chalk.green(`Installing server dependencies via npm...`));
+
+  shell.cd('../server');
+
+  shell.exec('npm install');
+
+  log(chalk.black.bgGreen(`Done.`));
+  log();
+
+  // Make a post request to the coordinator & save the app ID and secret in the .env file
   log(chalk.green(`Registering app with Hathora Coordinator...`));
+
+  shell.cd('..');
 
   let appId = '';
   let appSecret = '';
@@ -82,8 +96,8 @@ async function bootstrapProject() {
     appSecret = response.data.appSecret;
   }
   catch (e) {
-    console.log('Failed to reach Hathora Coordinator.');
-    console.log('Please check your internet connection and try again.');
+    log(chalk.red('Failed to reach Hathora Coordinator.'));
+    log('Please check your internet connection and try again.');
     shell.exit(1);
   }
 
@@ -100,7 +114,6 @@ async function bootstrapProject() {
   }
 
   log(chalk.black.bgGreen(`Done.`));
-
   log();
 
   log(chalk.bgMagenta(`                                      `));
@@ -114,9 +127,8 @@ async function bootstrapProject() {
   log();
 
   log(chalk.black.bgWhite(`Available commands:`));
-  log(`npm run server # Starts the server only`);
-  log(`npm run client # Starts the client only`);
-  log(`npm run all # Concurrently runs the server and client as one`);
+  log(chalk.white(`npm run server `) + chalk.gray(`# Starts the server`));
+  log(chalk.white(`npm run client `) + chalk.gray(`# Starts the client`));
 
   log();
 
