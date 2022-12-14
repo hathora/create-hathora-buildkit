@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "client": "npx ts-node-esm ./client/client.ts",
+    "client": "npm run dev --prefix ./client",
     "server": "npx ts-node-esm ./server/server.ts"
   },
   "devDependencies": {

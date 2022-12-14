@@ -1,6 +1,6 @@
 {
   "name": "create-hathora-buildkit",
-  "version": "1.0.48",
+  "version": "1.0.57",
   "type": "module",
   "description": "A CLI utility used to bootstrap Hathora BuildKit projects.",
   "main": "index.js",
