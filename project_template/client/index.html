@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your New Hathora App</title>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="app">
+        <h1>
+          <span>Your New</span>
+          <img src="/logo.png" alt="Hatora" />
+          <span>App</span>
+        </h1>
+
+        <p>
+          If you see the message "Hello Hathora" displayed in the dialog box below, your client-server connection has been correctly configured and is active.
+          <br /><br />
+          <span id="txt-app-id"></span>
+        </p>
+
+        <div class="output-panel">
+          <h2>Message from server:</h2>
+          <div id="server-out">...</div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
