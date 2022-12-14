@@ -41,7 +41,8 @@ async function bootstrapProject() {
     type: 'text',
     name: 'value',
     message: 'New project name?',
-    validate: value => !value.match(/^[a-z]+(-[a-z]+)*$/) ? `Lowercase letters interspaced with dashes only.` : true
+    // validate: value => !value.match(/^[a-z]+(-[a-z]+)*$/) ? `Lowercase letters interspaced with dashes only.` : true
+    validate: value => !value.match(/^[\w\-]+$/) ? `Lowercase letters interspaced with dashes only.` : true
   });
 
   projectName = projectName.value;
