@@ -1,162 +1,138 @@
 #!/usr/bin/env node
 'use strict';
 
-const readline = require('readline');
-const fs = require('fs').promises;
-const prompts = require('prompts');
-const { spawn } = require('node:child_process');
+import prompts from 'prompts';
+import shell from 'shelljs';
+import axios from 'axios';
+import chalk from 'chalk';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const log = console.log;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let projectName = "";
 
-console.log(`
+log(chalk.magenta(`
 , σ╦,
 δφ╓╙╚▒╦░╚▒╦,
   '╙▒╦╓╙╚φ╓"╚φ≡
     ⁿ╓░╙δ≡,"≥⌐
  ,ⁿ≥░"    ''
 ⁿσ'
+`));
 
-Bootstrapping new Hathora project...
-`);
+log(chalk.bgMagenta(`Bootstrapping new Hathora project...`));
 
-promptProjectName();
+bootstrapProject();
 
-async function promptProjectName() {
+async function bootstrapProject() {
+  // Dependency check
+  if (!shell.which('npm')) {
+    log(chalk.bgRed.bold('Sorry, this script requires npm.'));
+    log('You can install it at: https://nodejs.org/en/');
+    shell.exit(1);
+  }
+
+  // Get user's project name
   projectName = await prompts({
     type: 'text',
     name: 'value',
     message: 'New project name?',
-    validate: value => !value.match(/^[a-z]+(-[a-z]+)*$/) ? `Lowercase letters interspaced with dashes only.` : true
+    validate: value => !value.match(/^[\w\-]+$/) ? `Lowercase letters interspaced with dashes only.` : true
   });
 
   projectName = projectName.value;
 
-  // We have a projectName, try to create a directory
-  console.log(`Creating project directory "${projectName}"...`);
+  // Recursively copy project_template into the user's project directory
+  log(chalk.green(`Copying boilerplate project to ./${projectName}...`));
 
-  try {
-    await fs.mkdir(`./${projectName}`);
-  }
-  catch (e) {
-    console.log(`
-Failed to create directory "${projectName}".
-Does it already exist?
-    `);
-    process.exit(0);
-  }
+  shell.cp('-r', `${__dirname}/project_template`, `./${projectName}`);
 
-  console.log(`Done.`);
-
-  // Create subdirs
-  console.log(`Creating required project subdirectories...`);
-
-  try {
-    await fs.mkdir(`./${projectName}/client`);
-    await fs.mkdir(`./${projectName}/common`);
-    await fs.mkdir(`./${projectName}/server`);
-  }
-  catch (e) {
-    console.log(`
-Failed to create required subdirectories.
-(./${projectName}/client, ./${projectName}/common, ./${projectName}/server)
-`);
-    process.exit(0);
-  }
-
-  console.log(`Done.`);
-
-  // Write package.json files to each dir
-  console.log(`Writing package.json files...`);
-
-  try {
-    await fs.writeFile(`./${projectName}/client/package.json`, `{
-  "type": "module",
-  "scripts": {
-    "start": "npx vite",
-    "build": "npx vite build"
-  },
-  "dependencies": {
-    "@hathora/client-sdk": "*",
-    "interpolation-buffer": "*"
-  },
-  "devDependencies": {
-    "@types/node": "*",
-    "typescript": "*",
-    "vite": "*"
-  }
-}
-`);
-await fs.writeFile(`./${projectName}/common/package.json`, `{
-  "type": "module"
-}
-`);
-await fs.writeFile(`./${projectName}/server/package.json`, `{
-  "type": "module",
-  "scripts": {
-    "start": "npx ts-node-esm --experimental-specifier-resolution=node server.ts"
-  },
-  "dependencies": {
-    "@hathora/server-sdk": "*",
-    "dotenv": "*"
-  },
-  "devDependencies": {
-    "@types/node": "*",
-    "ts-node": "*",
-    "typescript": "*"
-  }
-}
-`);
-  }
-  catch (e) {
-    console.log(`
-Failed to write package.json files.
-`);
-    process.exit(0);
-  }
-
-  console.log(`Done.`);
-
-  console.log(`Writing install shell script...`);
-
-  try {
-    await fs.writeFile(`./${projectName}/install.sh`, `#!/bin/bash
-cd ./${projectName}/client
-npm install
-cd ../server
-npm install
-`);
-  }
-  catch (e) {
-    console.log(`
-Failed to write install.sh script.
-`);
-    process.exit(0);
-  }
-
-  console.log('Modifying install script permission...');
-
-  try {
-    await fs.chmod(`./${projectName}/install.sh`, '555');
-  }
-  catch (e) {
-    console.log(`
-Failed to grant 555 permissions to install.sh script.
-`);
-    process.exit(0);
-  }
-
-  console.log(`Installing dependencies via NPM...`);
+  log(chalk.black.bgGreen(`Done.`));
   
-  const runInstall = spawn(`./${projectName}/install.sh`);
+  // Install npm dependencies
+  log(chalk.green(`Installing root dependencies via npm...`));
 
-  runInstall.on('close', async () => {
-    console.log(`Done.`);
+  shell.cd(`./${projectName}`);
 
-    console.log(`Registering app on Hathora Coordinator...`);
+  shell.exec('npm install');
 
-    
+  log(chalk.black.bgGreen(`Done.`));
+  log();
 
-    process.exit(0);
-  });
+  log(chalk.green(`Installing client dependencies via npm...`));
 
+  shell.cd('./client');
+
+  shell.exec('npm install');
+
+  log(chalk.black.bgGreen(`Done.`));
+  log();
+
+  log(chalk.green(`Installing server dependencies via npm...`));
+
+  shell.cd('../server');
+
+  shell.exec('npm install');
+
+  log(chalk.black.bgGreen(`Done.`));
+  log();
+
+  // Make a post request to the coordinator & save the app ID and secret in the .env file
+  log(chalk.green(`Registering app with Hathora Coordinator...`));
+
+  shell.cd('..');
+
+  let appId = '';
+  let appSecret = '';
+
+  try {
+    const response = await axios.post('https://coordinator.hathora.dev/registerApp');
+
+    appId = response.data.appId;
+    appSecret = response.data.appSecret;
+  }
+  catch (e) {
+    log(chalk.red('Failed to reach Hathora Coordinator.'));
+    log('Please check your internet connection and try again.');
+    shell.exit(1);
+  }
+
+  log(chalk.black.bgGreen(`Done.`));
+
+  log(chalk.green(`Saving app information to .env file...`));
+
+  try {
+    await fs.writeFile('./.env', `APP_SECRET=${appSecret}\nAPP_ID=${appId}\n`);
+  }
+  catch (e) {
+    log(chalk.red(`Error writing .env file`));
+    shell.exit(1);
+  }
+
+  log(chalk.black.bgGreen(`Done.`));
+  log();
+
+  log(chalk.bgMagenta(`                                      `));
+  log(chalk.bgMagenta(`  `) + chalk.magenta(` Welcome to your new Hathora app. `) + chalk.bgMagenta(`  `));
+  log(chalk.bgMagenta(`                                      `));
+
+  log();
+
+  log(`First run: ` + chalk.black.bgWhite(`cd ${projectName}`) + ', then...');
+
+  log();
+
+  log(chalk.black.bgWhite(`Available commands:`));
+  log(chalk.white(`npm run server `) + chalk.gray(`# Starts the server`));
+  log(chalk.white(`npm run client `) + chalk.gray(`# Starts the client`));
+
+  log();
+
+  log(`Happy hacking!`);
+
+  shell.exit(0);
 }
