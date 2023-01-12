@@ -1,9 +1,9 @@
-import './style.css';
+import "./style.css";
 import { HathoraClient } from "@hathora/client-sdk";
 
-const serverOut = document.getElementById('server-out')!;
-const txtAppId = document.getElementById('txt-app-id')!;
-const outputPanel = document.querySelector('.output-panel')!;
+const serverOut = document.getElementById("server-out")!;
+const txtAppId = document.getElementById("txt-app-id")!;
+const outputPanel = document.querySelector(".output-panel")!;
 
 txtAppId.innerHTML = `Your app's unique ID is ${process.env.APP_ID}`;
 
@@ -20,8 +20,8 @@ connection.write(encoder.encode("Hello Hathora!"));
 function onMessage(msg: ArrayBuffer) {
   const msgStr = decoder.decode(msg);
 
-  if (msgStr === 'Hello Hathora!') {
-    outputPanel.classList.add('connected');
+  if (msgStr === "Hello Hathora!") {
+    outputPanel.classList.add("connected");
     serverOut.innerHTML = `${msgStr}`;
   }
 }
